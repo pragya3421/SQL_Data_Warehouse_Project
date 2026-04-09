@@ -1,158 +1,177 @@
-CREATE OR REPLACE PROCEDURE bronze.load_bronze()
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_table_start timestamptz;
-    v_table_sec   numeric;
+/*
+==========================================================================================
+Stored Procedure: Load Bronze Layer (Source --> Bronze)
+==========================================================================================
 
-    v_batch_start timestamptz;
-    v_batch_sec   numeric;
-BEGIN 
+Purpose:
+    This stored procedure loads data into the 'bronze' schema from external CSV files. 
+    Performs below actions:
+        -Truncate the bronze tables before loading data.
+        -Use the 'BULK INSERT' command to load data from CSV files to bronze tables.
 
-    -- Batch Start Time
-    v_batch_start := clock_timestamp();
+Parameters: 
+    None. This stored procedure does not accept any parameters or return any values.
 
-    RAISE NOTICE '=======================================================';
-    RAISE NOTICE 'Loading Bronze Layer';
-    RAISE NOTICE '=======================================================';
-
-
-    ------------------------------------------------------------------
-    -- TABLE 1
-    ------------------------------------------------------------------
-    v_table_start := clock_timestamp();
-
-    RAISE NOTICE '-------------------------------------------------------';
-    RAISE NOTICE 'Loading CRM Tables';
-    RAISE NOTICE '-------------------------------------------------------';
-
-    RAISE NOTICE '>>Truncating Table: bronze.crm_cust_info';
-    TRUNCATE TABLE bronze.crm_cust_info;
-
-    RAISE NOTICE '>>Inserting Data into: bronze.crm_cust_info';
-    COPY bronze.crm_cust_info
-    FROM 'C:\Users\pragy\Downloads\sql-data-warehouse-project\datasets\source_crm\cust_info.csv'
-    DELIMITER ',' CSV HEADER;
-
-    RAISE NOTICE '>>bronze.crm_cust_info loaded successfully.';
-    v_table_sec := extract(epoch FROM (clock_timestamp() - v_table_start));
-    RAISE NOTICE 'Time Taken (seconds): %', v_table_sec;
-
-    RAISE NOTICE '.......................................................';
+Example:
+    EXEC bronze.load_bronze
+==========================================================================================
+*/
 
 
-    ------------------------------------------------------------------
-    -- TABLE 2
-    ------------------------------------------------------------------
-    v_table_start := clock_timestamp();
-
-    RAISE NOTICE '>>Truncating Table: bronze.crm_prd_info';
-    TRUNCATE TABLE bronze.crm_prd_info;
-
-    RAISE NOTICE '>>Inserting Data into: bronze.crm_prd_info';
-    COPY bronze.crm_prd_info
-    FROM 'C:\Users\pragy\Downloads\sql-data-warehouse-project\datasets\source_crm\prd_info.csv'
-    DELIMITER ',' CSV HEADER;
-
-    RAISE NOTICE '>>bronze.crm_prd_info loaded successfully.';
-    v_table_sec := extract(epoch FROM (clock_timestamp() - v_table_start));
-    RAISE NOTICE 'Time Taken (seconds): %', v_table_sec;
-
-    RAISE NOTICE '.......................................................';
+CREATE OR ALTER PROCEDURE bronze.load_bronze AS
+BEGIN
+	DECLARE @start_time DATETIME , @end_time DATETIME, @batch_start_time DATETIME, @batch_end_time DATETIME;
+	BEGIN TRY
+/*
+========================
+BULK INSERT - CRM TABLE
+========================
+*/
+		SET @batch_start_time = GETDATE();
+		PRINT '=================================================';
+		PRINT 'Loading Bronze layer';
+		PRINT '=================================================';
 
 
-    ------------------------------------------------------------------
-    -- TABLE 3
-    ------------------------------------------------------------------
-    v_table_start := clock_timestamp();
+		PRINT '-------------------------------------------------';
+		PRINT 'Loading CRM Tables';
+		PRINT '-------------------------------------------------';
 
-    RAISE NOTICE '>>Truncating Table: bronze.crm_sales_details';
-    TRUNCATE TABLE bronze.crm_sales_details;
+		SET @start_time = GETDATE();
+		PRINT '>>>Truncating Table: bronze.crm_cust_info';
+		TRUNCATE TABLE  bronze.crm_cust_info
 
-    RAISE NOTICE '>>Inserting Data into: bronze.crm_sales_details';
-    COPY bronze.crm_sales_details
-    FROM 'C:\Users\pragy\Downloads\sql-data-warehouse-project\datasets\source_crm\sales_details.csv'
-    DELIMITER ',' CSV HEADER;
+		PRINT '>>>Inserting Data Into: bronze.crm_cust_info';
+		BULK INSERT bronze.crm_cust_info
+		FROM '/var/opt/mssql/data/source_crm/cust_info.csv'
+		WITH 
+		(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
 
-    RAISE NOTICE '>>bronze.crm_sales_details loaded successfully.';
-    v_table_sec := extract(epoch FROM (clock_timestamp() - v_table_start));
-    RAISE NOTICE 'Time Taken (seconds): %', v_table_sec;
-
-
-
-    ------------------------------------------------------------------
-    -- TABLE 4
-    ------------------------------------------------------------------
-    v_table_start := clock_timestamp();
-
-    RAISE NOTICE '-------------------------------------------------------';
-    RAISE NOTICE 'Loading ERP Tables';
-    RAISE NOTICE '-------------------------------------------------------';
-
-    RAISE NOTICE '>>Truncating Table: bronze.erp_cust_az12';
-    TRUNCATE TABLE bronze.erp_cust_az12;
-
-    RAISE NOTICE '>>Inserting Data into: bronze.erp_cust_az12';
-    COPY bronze.erp_cust_az12
-    FROM 'C:\Users\pragy\Downloads\sql-data-warehouse-project\datasets\source_erp\cust_az12.csv'
-    DELIMITER ',' CSV HEADER;
-
-    RAISE NOTICE '>>bronze.erp_cust_az12 loaded successfully.';
-    v_table_sec := extract(epoch FROM (clock_timestamp() - v_table_start));
-    RAISE NOTICE 'Time Taken (seconds): %', v_table_sec;
-
-    RAISE NOTICE '.......................................................';
+		SET @end_time = GETDATE();
+		PRINT '>>>Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time)AS NVARCHAR) + ' Seconds';
+		PRINT '>>>--------------------------';
 
 
-    ------------------------------------------------------------------
-    -- TABLE 5
-    ------------------------------------------------------------------
-    v_table_start := clock_timestamp();
+		--
+		SET @start_time = GETDATE();
+		PRINT '>>>Truncating Table: bronze.crm_prd_info';
+		TRUNCATE TABLE  bronze.crm_prd_info
 
-    RAISE NOTICE '>>Truncating Table: bronze.erp_loc_a101';
-    TRUNCATE TABLE bronze.erp_loc_a101;
+		PRINT '>>>Inserting Data Into: bronze.crm_prd_info';
+		BULK INSERT bronze.crm_prd_info
+		FROM '/var/opt/mssql/data/source_crm/prd_info.csv'
+		WITH 
+		(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>>>Load Duration:  ' + CAST(DATEDIFF(second, @start_time, @end_time)AS NVARCHAR) + ' Seconds';
+		PRINT '>>>--------------------------';
 
-    RAISE NOTICE '>>Inserting Data into: bronze.erp_loc_a101';
-    COPY bronze.erp_loc_a101
-    FROM 'C:\Users\pragy\Downloads\sql-data-warehouse-project\datasets\source_erp\loc_a101.csv'
-    DELIMITER ',' CSV HEADER;
+		--
+		SET @start_time = GETDATE();
+		PRINT '>>>Truncating Table: bronze.crm_sales_details';
+		TRUNCATE TABLE  bronze.crm_sales_details
 
-    RAISE NOTICE '>>bronze.erp_loc_a101 loaded successfully.';
-    v_table_sec := extract(epoch FROM (clock_timestamp() - v_table_start));
-    RAISE NOTICE 'Time Taken (seconds): %', v_table_sec;
-
-    RAISE NOTICE '.......................................................';
-
-
-    ------------------------------------------------------------------
-    -- TABLE 6
-    ------------------------------------------------------------------
-    v_table_start := clock_timestamp();
-
-    RAISE NOTICE '>>Truncating Table: bronze.erp_px_cat_g1v2';
-    TRUNCATE TABLE bronze.erp_px_cat_g1v2;
-
-    RAISE NOTICE '>>Inserting Data into: bronze.erp_px_cat_g1v2';
-    COPY bronze.erp_px_cat_g1v2
-    FROM 'C:\Users\pragy\Downloads\sql-data-warehouse-project\datasets\source_erp\px_cat_g1v2.csv'
-    DELIMITER ',' CSV HEADER;
-
-    RAISE NOTICE '>>bronze.erp_px_cat_g1v2 loaded successfully.';
-    v_table_sec := extract(epoch FROM (clock_timestamp() - v_table_start));
-    RAISE NOTICE 'Time Taken (seconds): %', v_table_sec;
-
+		PRINT '>>>Inserting Data Into: bronze.crm_sales_details';
+		BULK INSERT bronze.crm_sales_details
+		FROM '/var/opt/mssql/data/source_crm/sales_details.csv'
+		WITH 
+		(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>>>Load Duration:  ' + CAST(DATEDIFF(second, @start_time, @end_time)AS NVARCHAR) + ' Seconds';
+		PRINT '>>>--------------------------';
 
 
-    ------------------------------------------------------------------
-    -- BATCH TOTAL DURATION
-    ------------------------------------------------------------------
-    v_batch_sec := extract(epoch FROM (clock_timestamp() - v_batch_start));
+		/*
+		========================
+		BULK INSERT - ERP TABLE
+		========================
+		*/
+
+		PRINT '-------------------------------------------------';
+		PRINT 'Loading ERP Tables';
+		PRINT '-------------------------------------------------';
 
 
-    RAISE NOTICE '=======================================================';
-    RAISE NOTICE 'Bronze Layer Load Completed Successfully!';
-    RAISE NOTICE 'Total Batch Load Duration (seconds): %', v_batch_sec;
-    RAISE NOTICE '=======================================================';
+		SET @start_time = GETDATE();
+		PRINT '>>>Truncating Table: bronze.erp_CUST_AZ12';
+		TRUNCATE TABLE  bronze.erp_CUST_AZ12
 
-END;
-$$;
+		PRINT '>>>Inserting Data Into: bronze.erp_CUST_AZ12';
+		BULK INSERT bronze.erp_CUST_AZ12
+		FROM '/var/opt/mssql/data/source_erp/CUST_AZ12.csv'
+		WITH 
+		(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>>>Load Duration:  ' + CAST(DATEDIFF(second, @start_time, @end_time)AS NVARCHAR) + ' Seconds';
+		PRINT '>>>--------------------------';
+
+		--
+		SET @start_time = GETDATE();
+		PRINT '>>>Truncating Table: bronze.erp_LOC_A101';
+		TRUNCATE TABLE  bronze.erp_LOC_A101
+
+		PRINT '>>>Inserting Data Into: bronze.erp_LOC_A101';
+		BULK INSERT bronze.erp_LOC_A101
+		FROM '/var/opt/mssql/data/source_erp/LOC_A101.csv'
+		WITH 
+		(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>>>Load Duration:  ' + CAST(DATEDIFF(second, @start_time, @end_time)AS NVARCHAR) + ' Seconds';
+		PRINT '>>>--------------------------';
+
+		--
+		SET @start_time = GETDATE();
+		PRINT '>>>Truncating Table: bronze.erp_PX_CAT_G1V2';
+		TRUNCATE TABLE  bronze.erp_PX_CAT_G1V2
+
+		PRINT '>>>Inserting Data Into: bronze.erp_PX_CAT_G1V2';
+		BULK INSERT bronze.erp_PX_CAT_G1V2
+		FROM '/var/opt/mssql/data/source_erp/PX_CAT_G1V2.csv'
+		WITH 
+		(
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>>>Load Duration:  ' + CAST(DATEDIFF(second, @start_time, @end_time)AS NVARCHAR) + ' Seconds';
+		PRINT '>>>--------------------------';
+
+
+		SET @batch_end_time = GETDATE(); 
+		PRINT '==========================================================';
+		PRINT 'Loading Bronze Layer is Complete.';
+		PRINT '		- Total Load Duration: ' + CAST(DATEDIFF(SECOND, @batch_start_time, @batch_end_time) AS NVARCHAR) + ' Seconds';
+		PRINT '==========================================================';
+
+	END TRY
+	BEGIN CATCH
+		PRINT '==========================================================';
+		PRINT 'ERROR OCCURED DURING LOADING BRONZE LAYER';
+		PRINT 'ERROR Message' + ERROR_MESSAGE();
+		PRINT 'ERROR Message' + CAST (ERROR_NUMBER() AS NVARCHAR);
+		PRINT 'ERROR Message' + CAST (ERROR_STATE() AS NVARCHAR);
+		PRINT '=========================================================='
+	END CATCH
+END
+
