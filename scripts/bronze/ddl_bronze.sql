@@ -1,3 +1,14 @@
+/*
+==========================================================================================
+DDL Script: Create Bronze Table
+==========================================================================================
+
+Purpose:
+    This script creates tables in the bonze schema, drops existing tables if already exists.
+	Run this script to redine the DDL structure of 'bronze' tables.
+==========================================================================================
+*/
+
 ----Creating SQL DDL Scripts for ALL CSV Files in the CRM & ERP Systems.
 
 /*
@@ -109,93 +120,11 @@ MAINTENANCE NVARCHAR(50)
 GO
 
 
-/*
-========================
-BULK INSERT - CRM TABLE
-========================
-*/
-
---
-TRUNCATE TABLE  bronze.crm_cust_info
-BULK INSERT bronze.crm_cust_info
-FROM '/var/opt/mssql/data/source_crm/cust_info.csv'
-WITH 
-(
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    TABLOCK
-);
-
-
---
-
-TRUNCATE TABLE  bronze.crm_prd_info
-BULK INSERT bronze.crm_prd_info
-FROM '/var/opt/mssql/data/source_crm/prd_info.csv'
-WITH 
-(
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    TABLOCK
-);
-
-
---
-
-TRUNCATE TABLE  bronze.crm_sales_details
-BULK INSERT bronze.crm_sales_details
-FROM '/var/opt/mssql/data/source_crm/sales_details.csv'
-WITH 
-(
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    TABLOCK
-);
 
 
 
-/*
-========================
-BULK INSERT - ERP TABLE
-========================
-*/
-
---
-
-TRUNCATE TABLE  bronze.erp_CUST_AZ12
-BULK INSERT bronze.erp_CUST_AZ12
-FROM '/var/opt/mssql/data/source_erp/CUST_AZ12.csv'
-WITH 
-(
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    TABLOCK
-);
-
-
---
-
-TRUNCATE TABLE  bronze.erp_LOC_A101
-BULK INSERT bronze.erp_LOC_A101
-FROM '/var/opt/mssql/data/source_erp/LOC_A101.csv'
-WITH 
-(
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    TABLOCK
-);
 
 
 
---
 
-TRUNCATE TABLE  bronze.erp_PX_CAT_G1V2
-BULK INSERT bronze.erp_PX_CAT_G1V2
-FROM '/var/opt/mssql/data/source_erp/PX_CAT_G1V2.csv'
-WITH 
-(
-    FIRSTROW = 2,
-    FIELDTERMINATOR = ',',
-    TABLOCK
-);
 
